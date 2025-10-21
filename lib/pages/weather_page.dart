@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:weather_app/model/weather_model.dart';
 import 'package:weather_app/service/weather_service.dart';
+import 'package:lottie/lottie.dart';
 
 class WeatherPage extends StatefulWidget {
   const WeatherPage({super.key});
@@ -19,7 +20,7 @@ class _WeatherState extends State<WeatherPage> {
   fetchWeather() async {
     String city = await weather_state.getCurrentCity();
     try {
-      final weather = await weather_state.getWeather(city);
+      final weather = await weather_state.getWeather("portugal");
       setState(() {
         _weather = weather;
       });
@@ -34,15 +35,45 @@ class _WeatherState extends State<WeatherPage> {
     super.initState();
   }
 
+  String getWeatherIcon(Weather weather) {
+    if (weather.weatherStateName == 'Clear') {
+      return "assets/Weather-sunny.json";
+    } else if (weather.weatherStateName == 'Rain') {
+      return "assets/Weather-mist.json";
+    } else if (weather.weatherStateName == 'Clouds') {
+      return "assets/Weather-partly cloudy.json";
+    }
+
+    // default icon if no known weather state matches
+    return "assets/Weather-sunny.json";
+  }
+
   @override
   Widget build(BuildContext context) {
+    // show loader while weather is null
+    if (_weather == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    // safe to use _weather! here because we've checked for null
     return Scaffold(
       body: Center(
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          
           children: [
-            Text(_weather?.cityName ?? "Loading..."),
-            Text('${_weather?.temperature?.round() ?? 0} °C'),
+          Container(
+            child: Column(
+              children: [
+            Text('${_weather!.temperature.round()} °C'),
+            const Icon(Icons.location_on),]),),
+            Lottie.asset(
+              getWeatherIcon(_weather!),
+              width: 200,
+              height: 200,
+              fit: BoxFit.contain,
+            ),
+            Text(_weather!.cityName,style: TextStyle(fontWeight: FontWeight.bold,fontSize: 28),)
           ],
         ),
       ),

@@ -21,17 +21,56 @@ class WeatherService {
   }
 
   Future<String> getCurrentCity() async {
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
-    Position position =await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high);
-        List<Placemark> placemarks = await placemarkFromCoordinates(
-        position.latitude, position.longitude);
-        String? city=placemarks[0].locality;
-        return city??"";
-       
+    try {
+      // Check location permission
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
 
+      // If permission is still denied, throw exception
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        throw Exception('Location permission denied');
+      }
+
+      // Get current position
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      // Get placemarks from coordinates
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      // Check if we got any placemarks
+      if (placemarks.isEmpty) {
+        throw Exception('No placemarks found');
+      }
+
+      // Try to get city name from locality
+      String? city = placemarks[0].locality;
+
+      // If locality is null, try other location fields
+      if (city == null || city.isEmpty) {
+        city =
+            placemarks[0].subAdministrativeArea ??
+            placemarks[0].administrativeArea;
+      }
+
+      // If still no city, throw exception
+      if (city == null || city.isEmpty) {
+        throw Exception('Could not determine city name');
+      }
+      print(city);
+
+      return city;
+    } catch (e) {
+      print('Error in getCurrentCity: $e');
+      // Return a default city instead of empty string
+      return "London"; // Or throw the exception: throw e;
+    }
   }
 }
